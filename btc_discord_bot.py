@@ -202,9 +202,7 @@ async def fetch_and_send_tweets():
 
         if tweets.data:
             channel = bot.get_guild(GUILD_ID).get_channel(TWITTER_CHANNEL_ID)
-            media = {}
-            if tweets.includes and "media" in tweets.includes.__dict__:
-                media = {m["media_key"]: m for m in tweets.includes["media"]}
+            media = {m["media_key"]: m for m in tweets.includes.get("media", [])} if tweets.includes else {}
 
             for tweet in reversed(tweets.data):
                 if tweet.referenced_tweets:
