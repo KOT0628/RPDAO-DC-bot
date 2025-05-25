@@ -102,7 +102,7 @@ pip install -r requirements.txt
 
 ## 👤 Автор
 
-Создан с ❤️ [Red Planet DAO](https://linktr.ee/rpdao)  
+Создан с ❤️ для [Red Planet DAO](https://linktr.ee/rpdao)  
 Автор: [KOT0628](https://github.com/KOT0628)
 
 ---
