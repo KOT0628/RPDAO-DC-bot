@@ -144,10 +144,10 @@ async def update_btc_channel_name():
         
     # Обработка ошибки 429
     except discord.errors.HTTPException as e:
-    if e.status == 429:
-        logging.warning("[DISCORD] Rate limit: слишком частое обновление канала.")
-    else:
-        logging.error(f"[DISCORD] Ошибка при изменении имени канала: {e}")
+        if e.status == 429:
+            logging.warning("[DISCORD] Rate limit: слишком частое обновление канала.")
+        else:
+            logging.error(f"[DISCORD] Ошибка при изменении имени канала: {e}")
 
 # === Генерация изображения ===
 def create_price_image(price):
@@ -321,3 +321,4 @@ def run_web():
 if __name__ == "__main__":
     threading.Thread(target=run_web).start()
     bot.run(DISCORD_TOKEN)
+    
