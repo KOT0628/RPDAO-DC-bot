@@ -7,10 +7,14 @@ from PIL import Image, ImageDraw, ImageFont
 import datetime
 import asyncio
 import tweepy
+from dotenv import load_dotenv
 import threading
 import logging
 import os
 from flask import Flask
+
+# Загрузка переменных из .env
+load_dotenv()
 
 # === НАСТРОЙКИ DISCORD ===
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -40,8 +44,8 @@ if missing_vars:
 
 # === НАСТРОЙКИ TWITTER ===
 BEARER_TOKEN = os.getenv("TWITTER_BEARER")
-TWITTER_USERNAME = 'Red_Planet_Dao'
-twitter_client = tweepy.Client(bearer_token=BEARER_TOKEN)
+TWITTER_USERNAME = 'Red_Planet_Dao'  # имя пользователя
+twitter_client = tweepy.Client(bearer_token=BEARER_TOKEN)  # авторизация Twitter
 
 # Запоминать последний отправленный твит
 LAST_TWEET_FILE = "last_tweet.txt"
@@ -58,7 +62,7 @@ def save_last_tweet_id(tweet_id):
 
 last_tweet_id = load_last_tweet_id()
 
-previous_price = None
+previous_price = None  # Храним предыдущую цену
 seen_tweet_ids = set()
 
 # === HTTP СЕРВЕР (для Render) ===
@@ -98,7 +102,7 @@ async def update_btc_channel_name():
 
         if previous_price is not None:
             if current_price > previous_price:
-                emoji = "🟢⬈"
+                emoji = "🟢⬈"  # зелёный кружок и стрелка вверх
                 color = "зелёный"
             elif current_price < previous_price:
                 emoji = "🔴⬊"
@@ -189,9 +193,11 @@ async def slash_roll(interaction: discord.Interaction):
 async def fetch_and_send_tweets():
     global last_tweet_id
     try:
+        # Получаем ID пользователя по username
         user = twitter_client.get_user(username=TWITTER_USERNAME).data
         user_id = user.id
 
+        # Получаем последние твиты, исключая ретвиты и реплаи
         tweets = twitter_client.get_users_tweets(
             id=user_id,
             max_results=5,
@@ -234,6 +240,7 @@ async def fetch_and_send_tweets():
                             embed.set_image(url=media[key].url)
                             break
 
+                # Отправка сообщения с кнопкой
                 msg = await channel.send(embed=embed, view=view)
                 
                 # Добавим реакции
@@ -254,14 +261,15 @@ async def fetch_and_send_tweets():
 async def btc_loop():
     await bot.wait_until_ready()
     while True:
-        await update_btc_channel_name()
-        await asyncio.sleep(300)  # 5 минут
+        await update_btc_channel_name()  # обновление цены BTC
+        await asyncio.sleep(300)         # обновление каждые 5 минут
 
 async def twitter_loop():
     await bot.wait_until_ready()
     while True:
-        await fetch_and_send_tweets()
-        await asyncio.sleep(600)  # 10 минут
+        await fetch_and_send_tweets()     # проверка твитов
+        await asyncio.sleep(600)          # обновление каждые 10 минут
+        # каждая операция идёт последовательно
 
 @bot.event
 async def on_ready():
