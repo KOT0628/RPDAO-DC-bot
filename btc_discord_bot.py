@@ -132,7 +132,7 @@ async def update_btc_channel_name():
                 color = "белый"
         else:
             emoji = "🟡"
-                color = "жёлтый (первая загрузка)"
+            color = "жёлтый (первая загрузка)"
 
         new_name = f"{emoji} BTC: $ {current_price}"
         await channel.edit(name=new_name)
@@ -305,7 +305,7 @@ async def twitter_loop():
     await bot.wait_until_ready()
     while True:
         await fetch_and_send_tweets()     # проверка твитов
-        await asyncio.sleep(1200)          # обновление каждые 20 минут
+        await asyncio.sleep(1200)         # обновление каждые 20 минут
 
 @bot.event
 async def on_ready():
