@@ -18,7 +18,8 @@ load_dotenv()
 
 # === Переменные окружения ===
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-BEARER_TOKEN = os.getenv("TWITTER_BEARER")
+BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
+TWITTER_USER_ID = os.getenv("TWITTER_USER_ID")
 TWITTER_USERNAME = 'Red_Planet_Dao'        # имя пользователя
 
 GUILD_ID = 1249275519716036679             # Сервер Discord
@@ -220,11 +221,12 @@ async def slash_roll(interaction: discord.Interaction):
 async def fetch_and_send_tweets():
     global last_tweet_id
     try:
-        # Получаем ID пользователя по username
-        user = twitter_client.get_user(username=TWITTER_USERNAME).data
+        if not TWITTER_USER_ID:
+            logging.error("❌ TWITTER_USER_ID не установлен. Укажите его в .env")
+            return
         # Получаем последние твиты, исключая ретвиты и реплаи
         tweets = twitter_client.get_users_tweets(
-            id=user.id,
+            id=TWITTER_USER_ID,
             max_results=5,
             tweet_fields=['created_at', 'referenced_tweets', 'attachments'],
             expansions=['attachments.media_keys'],
@@ -234,7 +236,10 @@ async def fetch_and_send_tweets():
             channel = bot.get_guild(GUILD_ID).get_channel(TWITTER_CHANNEL_ID)
             media = {m["media_key"]: m for m in tweets.includes.get("media", [])} if tweets.includes else {}
             for tweet in reversed(tweets.data):
-                if tweet.referenced_tweets or str(tweet.id) == last_tweet_id:
+                if tweet.referenced_tweets:
+                    continue
+                
+                if last_tweet_id and str(tweet.id) <= str(last_tweet_id):
                     continue  # Уже отправлено
                 
                 tweet_url = f"https://twitter.com/{TWITTER_USERNAME}/status/{tweet.id}"
@@ -261,20 +266,25 @@ async def fetch_and_send_tweets():
                             break
                 
                 # Отправка сообщения с кнопкой
-                await channel.send(embed=embed, view=view)
+                msg = await channel.send(embed=embed, view=view)
                 
                 # Добавим реакции
                 await msg.add_reaction("❤️")
                 await msg.add_reaction("🔁")
                 await msg.add_reaction("🔴")
                 
-                last_tweet_id = str(tweet.id)
+                seen_tweet_ids.add(tweet.id)
+                last_tweet_id = tweet.id
                 save_last_tweet_id(last_tweet_id)
                 logging.info(f"[TWITTER] Отправлен твит ID: {tweet.id}")
         else:
             logging.info("[TWITTER] Нет новых твитов.")
     except Exception as e:
         logging.error(f"[TWITTER] Ошибка: {e}")
+    
+    # Обработка ошибки 429
+    except tweepy.TooManyRequests as e:
+        logging.warning(f"[TWITTER] ❗ Превышен лимит запросов (429). Ждём 20 минут.")
 
 # === Циклы задач ===
 # Каждая операция идёт последовательно
