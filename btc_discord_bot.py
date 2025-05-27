@@ -141,6 +141,13 @@ async def update_btc_channel_name():
         save_last_price(current_price)
     except Exception as e:
         logging.error(f"[BTC] Ошибка при обновлении: {e}")
+        
+    # Обработка ошибки 429
+    except discord.errors.HTTPException as e:
+    if e.status == 429:
+        logging.warning("[DISCORD] Rate limit: слишком частое обновление канала.")
+    else:
+        logging.error(f"[DISCORD] Ошибка при изменении имени канала: {e}")
 
 # === Генерация изображения ===
 def create_price_image(price):
@@ -292,13 +299,13 @@ async def btc_loop():
     await bot.wait_until_ready()
     while True:
         await update_btc_channel_name()  # обновление цены BTC
-        await asyncio.sleep(300)         # обновление каждые 5 минут
+        await asyncio.sleep(600)         # обновление каждые 10 минут
 
 async def twitter_loop():
     await bot.wait_until_ready()
     while True:
         await fetch_and_send_tweets()     # проверка твитов
-        await asyncio.sleep(600)          # обновление каждые 10 минут
+        await asyncio.sleep(1200)          # обновление каждые 20 минут
 
 @bot.event
 async def on_ready():
