@@ -1,6 +1,6 @@
-discord.py==2.3.2
-requests
-Pillow
-tweepy
+discord.py
 Flask
+tweepy
+Pillow
+requests
 python-dotenv
