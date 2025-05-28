@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 import datetime
 import asyncio
 import tweepy
+from tweepy.errors import TooManyRequests
 from dotenv import load_dotenv
 import threading
 import logging
@@ -102,9 +103,17 @@ seen_tweet_ids = set()
 # === Получение цены BTC ===
 async def get_btc_price():
     url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
-    response = requests.get(url)
-    data = response.json()
-    return round(data["bitcoin"]["usd"], 2)
+    try:
+        response = requests.get(url)
+        data = response.json()
+        if "bitcoin" in data and "usd" in data["bitcoin"]:
+            return round(data["bitcoin"]["usd"], 2)
+        else:
+            logging.error(f"[BTC] Неожиданный ответ от CoinGecko: {data}")
+            return None
+    except Exception as e:
+        logging.error(f"[BTC] Ошибка при получении цены: {e}")
+        return None
 
 # === Обновление имени канала BTC ===
 async def update_btc_channel_name():
@@ -286,12 +295,13 @@ async def fetch_and_send_tweets():
                 logging.info(f"[TWITTER] Отправлен твит ID: {tweet.id}")
         else:
             logging.info("[TWITTER] Нет новых твитов.")
-    except Exception as e:
-        logging.error(f"[TWITTER] Ошибка: {e}")
     
     # Обработка ошибки 429
     except tweepy.TooManyRequests as e:
-        logging.warning(f"[TWITTER] ❗ Превышен лимит запросов (429). Ждём 20 минут.")
+        logging.warning(f"[TWITTER] ❗ Превышен лимит запросов (429). Ждём 15 минут.")
+        await asyncio.sleep(900)  # 15 минут
+    except Exception as e:
+        logging.error(f"[TWITTER] Ошибка: {e}")
 
 # === Циклы задач ===
 # Каждая операция идёт последовательно
@@ -305,7 +315,7 @@ async def twitter_loop():
     await bot.wait_until_ready()
     while True:
         await fetch_and_send_tweets()     # проверка твитов
-        await asyncio.sleep(1200)         # обновление каждые 20 минут
+        await asyncio.sleep(600)          # обновление каждые 10 минут
 
 @bot.event
 async def on_ready():
